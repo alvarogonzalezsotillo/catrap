@@ -6,8 +6,8 @@ pub type Point = (Coordinate, Coordinate);
 
 
 
-pub const WIDTH: usize = 10;
-pub const HEIGHT: usize = 10;
+pub const WIDTH: usize = 12;
+pub const HEIGHT: usize = 12;
 
 #[derive(Clone,Eq,PartialEq,Hash)]
 pub struct Stage {

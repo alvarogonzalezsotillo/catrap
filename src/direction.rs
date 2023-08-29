@@ -20,6 +20,15 @@ impl Direction {
         }
     }
 
+    pub fn is_horizontal(&self) -> bool{
+        use Direction::*;
+        match self{
+            Up => false,
+            Down=> false,
+            _ => true
+        }
+    }
+
     pub fn iterator() -> Iter<'static, Direction> {
         use Direction::*;
         static DIRECTIONS: [Direction; 4] = [Up, Down, Left, Right];

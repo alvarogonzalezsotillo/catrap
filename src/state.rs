@@ -51,7 +51,11 @@ impl State {
     }
 
     pub fn all_ghosts_gone(&self) -> bool{
-        self.ghosts_count == 0
+        self.ghosts_count() == 0
+    }
+
+    pub fn ghosts_count(&self) -> usize{
+        self.ghosts_count
     }
 
     fn move_hero(&mut self, hero_index: usize, to: Point) -> &mut Self {
@@ -88,23 +92,19 @@ impl State {
     }
 
     fn free_fall_column(&mut self, empty_location: &Point) -> &mut Self {
-        println!("free_fall_column({:?}):", empty_location);
+        //println!("free_fall_column({:?}):", empty_location);
         if !Block::is_empty(self.block_at(empty_location)) {
-            println!(
-                "  free_fall_column({:?}): outside or not empty",
-                empty_location
-            );
             return self;
         }
         // RETURNS: the next location to check for a free fall step
         fn free_fall_step(myself: &mut State, empty_location: &Point) -> Option<Point> {
             if !Block::is_empty(myself.block_at(empty_location)) {
-                println!("  free_fall_step({:?}): no está vacío", empty_location);
+                //println!("  free_fall_step({:?}): no está vacío", empty_location);
                 return None;
             };
             let up = Direction::Up.move_point(empty_location);
             let block_up = myself.block_at(&up);
-            println!("  free_fall_step: up:{:?} block_up:{:?}", up, block_up);
+            //println!("  free_fall_step: up:{:?} block_up:{:?}", up, block_up);
             if Block::is_hero(block_up) {
                 let hero_index = myself.hero_index_at(&up).unwrap();
                 myself.move_hero(hero_index, *empty_location);
@@ -121,19 +121,19 @@ impl State {
         while next_empty_location.is_some() {
             next_empty_location = free_fall_step(self, &next_empty_location.unwrap());
         }
-        println!("  free_fall_column: recursión abajo",);
+        //println!("  free_fall_column: recursión abajo",);
         self.free_fall_column(&Direction::Down.move_point(empty_location));
         self
     }
 
     fn free_fall_after_move(&mut self, from: &Point, to: &Point, next_to: &Point) -> &Self {
-        println!("---- from ----- ");
+        //println!("---- from ----- ");
         self.free_fall_column(from);
-        println!("---- to ----- ");
+        //println!("---- to ----- ");
         self.free_fall_column(to);
-        println!("---- to down ----- ");
+        //println!("---- to down ----- ");
         self.free_fall_column(&Direction::Down.move_point(to));
-        println!("---- next_to down ----- ");
+        //println!("---- next_to down ----- ");
         self.free_fall_column(&Direction::Down.move_point(next_to));
         self
     }
@@ -163,21 +163,28 @@ impl State {
         let next_to_block = self.block_at(&next_to);
 
         let mut ret = self.clone();
+        let horizontal = direction.is_horizontal();
 
-        match (to_block, next_to_block) {
-            (Empty, _) => {
+        match (to_block, next_to_block, horizontal) {
+            (Empty, _, true) => {
                 ret.apply_modifications(&hero, &to, &next_to, |myself| {
                     myself.move_hero(hero_index, to);
                 });
                 Some(ret)
             }
-            (SandWall, _) => {
+            (Empty, _, false) if matches!(hero_block,Block::Stair) => {
+                ret.apply_modifications(&hero, &to, &next_to, |myself| {
+                    myself.move_hero(hero_index, to);
+                });
+                Some(ret)
+            }
+            (SandWall, _, true) => {
                 ret.apply_modifications(&hero, &to, &next_to, |myself| {
                     myself.modify(&to.clone(),Empty).move_hero(hero_index, to);
                 });
                 Some(ret)
             }
-            (Stair, _) => {
+            (Stair, _, _) => {
                 if matches!(direction, Direction::Up) && matches!(hero_block, Block::Empty) {
                     None
                 } else {
@@ -187,21 +194,19 @@ impl State {
                     Some(ret)
                 }
             }
-            (Rock, Empty) => {
+            (Rock, Empty, true) => {
                 ret.apply_modifications(&hero, &to, &next_to, |myself| {
                     myself.modify(&to, Empty).modify(&next_to, Rock);
                 });
 
                 Some(ret)
             }
-            (ghost, _) if Block::is_ghost(ghost) => {
+            (ghost, _, true) if Block::is_ghost(ghost) => {
                 ret.apply_modifications(&hero, &to, &next_to, |myself| {
                     myself.modify(&to, Empty).move_hero(hero_index, to);
                 });
                 Some(ret)
             }
-            (Wall, _) => None,
-            (Rock, b) if !Block::is_empty(b) => None,
             _ => None,
         }
     }
