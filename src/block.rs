@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug,Eq,PartialEq,Hash)]
 pub enum Block {
     Wall,
     SandWall,

@@ -9,7 +9,7 @@ pub type Point = (Coordinate, Coordinate);
 pub const WIDTH: usize = 10;
 pub const HEIGHT: usize = 10;
 
-#[derive(Clone)]
+#[derive(Clone,Eq,PartialEq,Hash)]
 pub struct Stage {
     pub blocks: [[Block; WIDTH]; HEIGHT],
 }

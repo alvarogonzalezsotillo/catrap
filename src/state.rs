@@ -1,5 +1,6 @@
-use ntest::assert_false;
 use std::cell::RefCell;
+use ntest::assert_false;
+use std::hash::{Hash, Hasher};
 use std::io::Write;
 use std::rc::Rc;
 
@@ -9,12 +10,21 @@ use crate::stage::Stage;
 use crate::direction::Direction;
 use crate::stage::Point;
 
-#[derive(Clone)]
-struct State {
+
+#[derive(Clone,Eq,PartialEq)]
+pub struct State {
     stage: Rc<RefCell<Stage>>,
     heroes: Vec<Point>,
     ghosts_count: usize,
 }
+
+impl Hash for State{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.stage.borrow().hash(state);
+        self.heroes.hash(state);
+    }
+}
+
 
 impl State {
     fn new(heroes: Vec<Point>, stage: Stage) -> State {
@@ -39,9 +49,11 @@ impl State {
 
         ret
     }
-}
 
-impl State {
+    pub fn all_ghosts_gone(&self) -> bool{
+        self.ghosts_count == 0
+    }
+
     fn move_hero(&mut self, hero_index: usize, to: Point) -> &mut Self {
         self.heroes[hero_index] = to;
         self
@@ -161,7 +173,7 @@ impl State {
             }
             (SandWall, _) => {
                 ret.apply_modifications(&hero, &to, &next_to, |myself| {
-                    myself.modify(&to.clone(),Block::Empty).move_hero(hero_index, to);
+                    myself.modify(&to.clone(),Empty).move_hero(hero_index, to);
                 });
                 Some(ret)
             }
