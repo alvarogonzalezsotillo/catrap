@@ -140,12 +140,15 @@ impl State {
 
     fn apply_modifications<FN: FnOnce(&mut Self) -> ()>(
         &mut self,
+        copy_stage: bool,
         hero: &Point,
         to: &Point,
         next_to: &Point,
         function: FN,
     ) -> &mut Self {
-        self.copy_stage();
+        if copy_stage {
+            self.copy_stage();
+        }
         function(self);
         self.free_fall_after_move(&hero, &to, &next_to);
         self
@@ -167,19 +170,19 @@ impl State {
 
         match (to_block, next_to_block, horizontal) {
             (Empty, _, true) => {
-                ret.apply_modifications(&hero, &to, &next_to, |myself| {
+                ret.apply_modifications(false, &hero, &to, &next_to, |myself| {
                     myself.move_hero(hero_index, to);
                 });
                 Some(ret)
             }
             (Empty, _, false) if matches!(hero_block,Block::Stair) => {
-                ret.apply_modifications(&hero, &to, &next_to, |myself| {
+                ret.apply_modifications(false, &hero, &to, &next_to, |myself| {
                     myself.move_hero(hero_index, to);
                 });
                 Some(ret)
             }
             (SandWall, _, true) => {
-                ret.apply_modifications(&hero, &to, &next_to, |myself| {
+                ret.apply_modifications(true, &hero, &to, &next_to, |myself| {
                     myself.modify(&to.clone(),Empty).move_hero(hero_index, to);
                 });
                 Some(ret)
@@ -188,21 +191,21 @@ impl State {
                 if matches!(direction, Direction::Up) && matches!(hero_block, Block::Empty) {
                     None
                 } else {
-                    ret.apply_modifications(&hero, &to, &next_to, |myself| {
+                    ret.apply_modifications(false, &hero, &to, &next_to, |myself| {
                         myself.move_hero(hero_index, to);
                     });
                     Some(ret)
                 }
             }
             (Rock, Empty, true) => {
-                ret.apply_modifications(&hero, &to, &next_to, |myself| {
+                ret.apply_modifications(true, &hero, &to, &next_to, |myself| {
                     myself.modify(&to, Empty).modify(&next_to, Rock);
                 });
 
                 Some(ret)
             }
             (ghost, _, true) if Block::is_ghost(ghost) => {
-                ret.apply_modifications(&hero, &to, &next_to, |myself| {
+                ret.apply_modifications(true, &hero, &to, &next_to, |myself| {
                     myself.modify(&to, Empty).move_hero(hero_index, to);
                 });
                 Some(ret)
