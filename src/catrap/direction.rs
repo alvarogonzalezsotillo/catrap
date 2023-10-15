@@ -1,5 +1,5 @@
 use std::slice::Iter;
-use crate::stage::Point;
+use super::stage::Point;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Direction {

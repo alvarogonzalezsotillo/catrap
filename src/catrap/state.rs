@@ -4,11 +4,11 @@ use std::hash::{Hash, Hasher};
 use std::io::Write;
 use std::rc::Rc;
 
-use crate::block::Block;
-use crate::stage::Stage;
+use super::block::Block;
+use super::stage::Stage;
 
-use crate::direction::Direction;
-use crate::stage::Point;
+use super::direction::Direction;
+use super::stage::Point;
 
 
 #[derive(Clone,Eq,PartialEq)]
@@ -155,7 +155,7 @@ impl State {
     }
 
     pub fn next_state(&self, hero_index: usize, direction: Direction) -> Option<Self> {
-        use crate::block::Block::*;
+        use super::block::Block::*;
         assert!(hero_index < self.heroes.len());
         let hero = self.heroes[hero_index];
         let to = direction.move_point(&hero);
@@ -252,7 +252,7 @@ impl State {
     }
 
     pub fn from_lines(lines: Vec<&str>) -> State {
-        let blocks = [Default::default(); crate::stage::HEIGHT];
+        let blocks = [Default::default(); super::stage::HEIGHT];
         let mut ret = Stage { blocks };
         let mut heroes: Vec<Point> = vec![];
         for (line, str) in lines.iter().enumerate() {
@@ -277,9 +277,9 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use crate::block::Block;
-    use crate::direction::Direction;
-    use crate::state::State;
+    use crate::catrap::block::Block;
+    use crate::catrap::direction::Direction;
+    use crate::catrap::state::State;
 
     #[test]
     fn whole_turn_around() {

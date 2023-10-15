@@ -2,7 +2,12 @@
 
 use pathfinding::prelude::astar;
 
-use crate::state::State;
+use super::catrap::state::State;
+
+mod state;
+mod block;
+mod stage;
+mod direction;
 
 
 pub fn solve_catrap( state: &State ) -> Option<Vec<State>> {
@@ -21,7 +26,7 @@ pub fn solve_catrap( state: &State ) -> Option<Vec<State>> {
 #[cfg(test)]
 mod tests {
     use crate::catrap::solve_catrap;
-    use crate::state::State;
+    use super::state::State;
 
     #[test]
     fn simple_test_only_right(){

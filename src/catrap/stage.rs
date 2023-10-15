@@ -1,5 +1,5 @@
 use ntest::assert_false;
-use crate::block::Block;
+use super::block::Block;
 
 pub type Coordinate = i32;
 pub type Point = (Coordinate, Coordinate);

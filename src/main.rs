@@ -1,7 +1,3 @@
-mod state;
-mod block;
-mod stage;
-mod direction;
 mod catrap;
 
 fn main() {
