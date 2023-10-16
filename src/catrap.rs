@@ -1,13 +1,14 @@
 
 
-use pathfinding::prelude::astar;
-
-use super::catrap::state::State;
-
 mod state;
 mod block;
 mod stage;
 mod direction;
+
+use pathfinding::prelude::astar;
+
+use state::State;
+
 
 
 pub fn solve_catrap( state: &State ) -> Option<Vec<State>> {
@@ -23,9 +24,33 @@ pub fn solve_catrap( state: &State ) -> Option<Vec<State>> {
 }
 
 
+pub(crate) fn level_80(){
+    #[cfg_attr(rustfmt, rustfmt::skip)]
+        let strings = vec![
+        "@==========",
+        "**********=",
+        "**FFR*RFR*=",
+        "**F*F*F*F*=",
+        "**RRR*R*R*=",
+        "**F*F*F*F*=",
+        "**RRF*FFR*=",
+        "**********="
+    ];
+    let state = State::from_lines(strings);
+    state.dump_stdout();
+
+    match solve_catrap(&state){
+        None => assert!(false),
+        Some(states) => {
+            states.iter().for_each( |s| s.dump_stdout() );
+        }
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
-    use crate::catrap::solve_catrap;
+    use super::super::catrap::solve_catrap;
     use super::state::State;
 
     #[test]
@@ -70,26 +95,7 @@ mod tests {
 
     #[test]
     fn level_80(){
-        #[cfg_attr(rustfmt, rustfmt::skip)]
-            let strings = vec![
-            "@==========",
-            "**********=",
-            "**FFR*RFR*=",
-            "**F*F*F*F*=",
-            "**RRR*R*R*=",
-            "**F*F*F*F*=",
-            "**RRF*FFR*=",
-            "**********="
-        ];
-        let state = State::from_lines(strings);
-        state.dump_stdout();
-
-        match solve_catrap(&state){
-            None => assert!(false),
-            Some(states) => {
-                states.iter().for_each( |s| s.dump_stdout() );
-            }
-        }
+        super::level_80();
     }
 
 }

@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use ntest::assert_false;
 use std::hash::{Hash, Hasher};
 use std::io::Write;
 use std::rc::Rc;
@@ -50,6 +49,7 @@ impl State {
         ret
     }
 
+    #[allow(dead_code)]
     pub fn all_ghosts_gone(&self) -> bool{
         self.ghosts_count() == 0
     }
@@ -79,7 +79,9 @@ impl State {
     }
 
     fn modify(&mut self, location: &Point, block: Block) -> &mut Self {
-        assert_false!(matches!(block, Block::Hero));
+        if matches!(block, Block::Hero){
+            panic!();
+        }
         let previous = self.block_at(location);
         if Block::is_ghost(previous) {
             self.ghosts_count -= 1;
@@ -277,9 +279,9 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use crate::catrap::block::Block;
-    use crate::catrap::direction::Direction;
-    use crate::catrap::state::State;
+    use super::super::block::Block;
+    use super::super::direction::Direction;
+    use super::super::state::State;
 
     #[test]
     fn whole_turn_around() {

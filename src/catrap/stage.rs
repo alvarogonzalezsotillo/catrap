@@ -1,4 +1,3 @@
-use ntest::assert_false;
 use super::block::Block;
 
 pub type Coordinate = i32;
@@ -41,7 +40,9 @@ impl Stage {
     }
 
     pub fn set_block_at(&mut self, point: &Point, block: Block) {
-        assert_false!(matches!(block, Block::Hero));
+        if matches!(block, Block::Hero){
+            panic!();
+        }
         let (x, y) = *point;
         let x = x as usize;
         let y = y as usize;

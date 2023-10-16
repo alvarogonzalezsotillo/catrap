@@ -1,5 +1,8 @@
 mod catrap;
 
+mod amazonas;
+
 fn main() {
-    println!("Hello, world!");
+    catrap::level_80();
+
 }
