@@ -186,6 +186,7 @@ impl Board {
 
 #[cfg(test)]
 mod test {
+    use std::io::Write;
     use super::Board;
     #[test]
     fn test() {
@@ -212,15 +213,23 @@ mod test {
 
     #[test]
     fn some_steps() {
+        
         fn step(b: &Board, level: i32) {
+            let out = &mut std::io::stdout();
             if level < 0 {
                 return;
             }
-            b.dump_stdout();
+            b.dump(out);
+            writeln!(out,"Nivel: {}", level);
             let n = b.fill_next_cell();
             n.iter().for_each(|b| step(b, level - 1));
         }
         let b = Board::new(4);
         step(&b, 7);
     }
+
+T T T . 
+A . A x 
+. . . . 
+. . . . 
 }
