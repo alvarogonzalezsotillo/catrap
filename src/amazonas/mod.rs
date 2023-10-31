@@ -40,6 +40,24 @@ impl Board {
         }
     }
 
+    pub fn from_lines(lines: Vec<&str>) -> Board {
+        let mut ret = Board::new(lines.len() as Number);
+
+        for (line, str) in lines.iter().enumerate() {
+            let mut column : i32 = 0;
+            for c in str.chars() {
+                match c {
+                    'T' => ret = ret.fill_next_cell_with_tree(),
+                    'A' => ret = ret.fill_next_cell_with_amazon(),
+                    '.' => ret = ret.fill_next_cell_with_empty(),
+                    'x' => return ret,
+                    _ => (),
+                }
+            }
+        }
+        ret
+    }
+
     fn cell_is_threatened(&self, cell: &Coordinates) -> bool {
         fn same_vertical(a: &Coordinates, b: &Coordinates) -> bool {
             a.0 == b.0
@@ -60,11 +78,17 @@ impl Board {
         }
         fn between_vertical(a: &Coordinates, between: &Coordinates, c: &Coordinates) -> bool {
             debug_assert!(same_vertical(a, c));
+            if !same_horizontal( a, between ){
+                return false;
+            }
             between_number(a.1, between.1, c.1)
         }
 
         fn between_horizontal(a: &Coordinates, between: &Coordinates, c: &Coordinates) -> bool {
             debug_assert!(same_horizontal(a, c));
+            if !same_horizontal( a, between ){
+                return false;
+            }
             between_number(a.0, between.0, c.0)
         }
 
@@ -98,16 +122,19 @@ impl Board {
                 if !trees.iter().any(|t| between_horizontal(a, t, b)) {
                     return true;
                 }
+                return false;
             }
             if same_vertical(a, b) {
                 if !trees.iter().any(|t| between_vertical(a, t, b)) {
                     return true;
                 }
+                return false;
             }
             if same_diagonal(a, b) {
                 if !trees.iter().any(|t| between_diagonal(a, t, b)) {
                     return true;
                 }
+                return false;
             }
 
             false
@@ -118,40 +145,56 @@ impl Board {
             .any(|a| threatened(a, cell, &self.trees))
     }
 
-    fn fill_next_cell(&self) -> Vec<Board> {
-        let mut ret: Vec<Board> = vec![];
+    fn fill_next_cell_with_empty(&self) -> Board{
         let next = next_coordinates(&self.next_cell_to_fill, self.board_size);
-        if next.is_none() {
-            return ret;
-        }
-
         let next = next.unwrap();
-
         let next_board_without_piece = {
             let mut b = self.clone();
             b.next_cell_to_fill = next;
             b
         };
-        ret.push(next_board_without_piece);
+        next_board_without_piece
+    }
 
-        let threatened = self.cell_is_threatened(&self.next_cell_to_fill);
-        if !threatened {
-            let next_board_with_amazon = {
-                let mut b = self.clone();
-                b.amazons.push(b.next_cell_to_fill.clone());
-                b.next_cell_to_fill = next;
-                b
-            };
-            ret.push(next_board_with_amazon);
-        }
+    fn fill_next_cell_with_amazon(&self) -> Board{
+        let next = next_coordinates(&self.next_cell_to_fill, self.board_size);
+        let next = next.unwrap();
+        let next_board_with_amazon = {
+            let mut b = self.clone();
+            b.amazons.push(b.next_cell_to_fill.clone());
+            b.next_cell_to_fill = next;
+            b
+        };
+        next_board_with_amazon
+    }
 
+    fn fill_next_cell_with_tree(&self) -> Board{
+        let next = next_coordinates(&self.next_cell_to_fill, self.board_size);
+        let next = next.unwrap();
         let next_board_with_tree = {
             let mut b = self.clone();
             b.trees.push(b.next_cell_to_fill.clone());
             b.next_cell_to_fill = next;
             b
         };
-        ret.push(next_board_with_tree);
+        next_board_with_tree
+    }
+
+    fn fill_next_cell_with_possible(&self) -> Vec<Board> {
+        let mut ret: Vec<Board> = vec![];
+        let next = next_coordinates(&self.next_cell_to_fill, self.board_size);
+        if next.is_none() {
+            return ret;
+        }
+
+        ret.push(self.fill_next_cell_with_empty());
+
+        let threatened = self.cell_is_threatened(&self.next_cell_to_fill);
+        if !threatened {
+            ret.push(self.fill_next_cell_with_amazon());
+        }
+
+        ret.push(self.fill_next_cell_with_tree());
 
         ret
     }
@@ -187,6 +230,9 @@ impl Board {
 #[cfg(test)]
 mod test {
     use std::io::Write;
+    use ntest::assert_true;
+    use pathfinding::num_traits::Num;
+    use crate::amazonas::Number;
     use super::Board;
     #[test]
     fn test() {
@@ -196,17 +242,17 @@ mod test {
     #[test]
     fn first_step() {
         let b = Board::new(4);
-        let next_step = b.fill_next_cell();
+        let next_step = b.fill_next_cell_with_possible();
         next_step.iter().for_each(|b| b.dump_stdout());
     }
 
     #[test]
     fn second_step() {
         let b = Board::new(4);
-        let next_step = b.fill_next_cell();
+        let next_step = b.fill_next_cell_with_possible();
         next_step.iter().for_each(|b| {
             b.dump_stdout();
-            let n = b.fill_next_cell();
+            let n = b.fill_next_cell_with_possible();
             n.iter().for_each(|b| b.dump_stdout());
         });
     }
@@ -217,19 +263,45 @@ mod test {
         fn step(b: &Board, level: i32) {
             let out = &mut std::io::stdout();
             if level < 0 {
+                if b.amazons.len() > 3 {
+                    b.dump(out);
+                }
                 return;
             }
-            b.dump(out);
-            writeln!(out,"Nivel: {}", level);
-            let n = b.fill_next_cell();
+            let n = b.fill_next_cell_with_possible();
             n.iter().for_each(|b| step(b, level - 1));
         }
         let b = Board::new(4);
-        step(&b, 7);
+        step(&b, 14);
     }
 
-T T T . 
-A . A x 
-. . . . 
-. . . . 
+
+    #[test]
+    fn from_lines_threatened(){
+        #[cfg_attr(rustfmt, rustfmt::skip)]
+        let lines = vec!(
+            "T T T . ",
+            "A . . x ",
+            ". . . . ",
+            ". . . . "
+        );
+        let board = Board::from_lines(lines);
+        board.dump_stdout();
+        assert_true!( board.cell_is_threatened( &(2 as Number,1 as Number) ) );
+    }
+
+    #[test]
+    fn from_lines_not_threatened(){
+        #[cfg_attr(rustfmt, rustfmt::skip)]
+            let lines = vec!(
+            "T T T . ",
+            ". . . x ",
+            ". . . . ",
+            ". . . . "
+        );
+        let board = Board::from_lines(lines);
+        board.dump_stdout();
+        assert_true!( !board.cell_is_threatened( &(2 as Number,1 as Number) ) );
+    }
+
 }
