@@ -5,22 +5,6 @@ use std::io::Write;
 type Number = i32;
 type Coordinates = (Number, Number);
 
-fn find_board_dfs(board_size: Number, max_number_of_trees: usize) -> Option<Vec<Board>> {
-    let b = Board::new(board_size);
-
-    let successors = |b: &Board| {
-        //b.dump_stdout( "Padre        ");
-        let possible = b.fill_next_cell_with_possible( );
-        //possible.iter().for_each( |b| b.dump_stdout("HIJO posible "));
-        possible
-            .into_iter()
-            .filter(|b: &Board| b.trees.len() <= max_number_of_trees as usize)
-
-    };
-    let success = |b: &Board| b.amazons.len() >= b.board_size as usize;
-    dfs(b, successors, success)
-}
-
 pub fn find_board(board_size: Number, max_number_of_trees: usize) -> Option<Board> {
     fn step(b: &Board, max_number_of_trees: usize ) -> Option<Board>{
         let valid = |b: &&Board| {
