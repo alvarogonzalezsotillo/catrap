@@ -1,36 +1,85 @@
 use pathfinding::num_traits::abs;
-use pathfinding::prelude::dfs;
 use std::io::Write;
 
 type Number = i32;
 type Coordinates = (Number, Number);
 
-pub fn find_board(board_size: Number, max_number_of_trees: usize) -> Option<Board> {
-    fn step(b: &Board, max_number_of_trees: usize ) -> Option<Board>{
+pub fn find_board_mutable(board_size: Number, max_number_of_trees: usize) -> Option<Board> {
+    fn step(board: &mut Board, max_number_of_trees: usize) -> Option<Board> {
+        if board.amazons.len() == board.board_size as usize {
+            return Some(board.clone());
+        }
+
+        if board.next_cell_to_fill.is_none() {
+            return None;
+        }
+        let previous_next = board.next_cell_to_fill.unwrap();
+        board.next_cell_to_fill = board.next_coordinates(&previous_next);
+
+        // TRY AMAZON
+        if board.cell_is_threatened(&previous_next).is_none() {
+            board.amazons.push(previous_next.clone());
+            let try_with_amazon = step(board, max_number_of_trees);
+            if try_with_amazon.is_some() {
+                return try_with_amazon;
+            }
+            board.amazons.pop();
+        }
+
+        // TRY EMPTY
+        let try_empty = step(board, max_number_of_trees);
+        if try_empty.is_some() {
+            return try_empty;
+        }
+
+        // TRY TREE
+        if board.trees.len() < max_number_of_trees {
+            board.trees.push(previous_next.clone());
+            let try_with_tree = step(board, max_number_of_trees);
+            if try_with_tree.is_some() {
+                return try_with_tree;
+            }
+            board.trees.pop();
+        }
+
+        board.next_cell_to_fill = Some(previous_next);
+
+        None
+    }
+
+    step(&mut Board::new(board_size), max_number_of_trees)
+}
+
+pub fn find_board_inmutable(board_size: Number, max_number_of_trees: usize) -> Option<Board> {
+    fn step(b: &Board, max_number_of_trees: usize) -> Option<Board> {
         let valid = |b: &&Board| {
             b.amazons.len() <= b.board_size as usize && b.trees.len() <= max_number_of_trees
         };
 
-        if b.amazons.len() == b.board_size as usize{
+        if b.amazons.len() == b.board_size as usize {
             return Some(b.clone());
         }
 
-        for child in b.fill_next_cell_with_possible().iter().filter(valid){
-            match step(child, max_number_of_trees ){
+        for child in b.fill_next_cell_with_possible().iter().filter(valid) {
+            match step(child, max_number_of_trees) {
                 Some(b) => return Some(b),
                 _ => (),
             }
         }
         None
     }
-    step(&Board::new(board_size) ,max_number_of_trees )
+    step(&Board::new(board_size), max_number_of_trees)
+}
+
+pub fn find_board(board_size: Number, max_number_of_trees: usize) -> Option<Board> {
+    find_board_mutable(board_size, max_number_of_trees)
 }
 
 pub fn find_board_minimize_trees(board_size: Number) -> Option<Board> {
-    let mut max_number_of_trees = board_size*board_size;
+    let mut max_number_of_trees = board_size * board_size;
 
-    let mut last_found = find_board(board_size,max_number_of_trees as usize);
-    if last_found.is_none(){
+    let mut last_found = find_board(board_size, max_number_of_trees as usize);
+    if last_found.is_none() {
         return None;
     }
     while last_found.is_some() {
@@ -38,11 +87,11 @@ pub fn find_board_minimize_trees(board_size: Number) -> Option<Board> {
         if max_number_of_trees == -1 {
             return last_found;
         }
-        match find_board(board_size, max_number_of_trees as usize){
+        match find_board(board_size, max_number_of_trees as usize) {
             Some(next) => {
-                next.dump_stdout(&std::format!("con {} árboles ", max_number_of_trees) );
+                next.dump_stdout(&std::format!("con {} árboles ", max_number_of_trees));
                 last_found = Some(next);
-            },
+            }
             None => return last_found,
         }
     }
@@ -113,11 +162,11 @@ impl Board {
         }
     }
 
-    fn find_threat(&self) -> Option<(Coordinates,Coordinates)>{
-        for amazon in self.amazons.iter(){
-            match self.cell_is_threatened( amazon ){
-                Some(t) => return Some( (amazon.clone(),t) ),
-                _ => ()
+    fn find_threat(&self) -> Option<(Coordinates, Coordinates)> {
+        for amazon in self.amazons.iter() {
+            match self.cell_is_threatened(amazon) {
+                Some(t) => return Some((amazon.clone(), t)),
+                _ => (),
             }
         }
         None
@@ -177,8 +226,7 @@ impl Board {
         }
 
         fn threatened(a: &Coordinates, b: &Coordinates, trees: &Vec<Coordinates>) -> bool {
-
-            if a == b{
+            if a == b {
                 return false;
             }
 
@@ -214,11 +262,10 @@ impl Board {
             .iter()
             .find(|a| threatened(a, cell, &self.trees))
             .cloned()
-
     }
 
     fn fill_next_cell_with_empty(&self) -> Board {
-        let next = self.next_coordinates(&self.next_cell_to_fill.unwrap() );
+        let next = self.next_coordinates(&self.next_cell_to_fill.unwrap());
         let next = next;
         let next_board_without_piece = {
             let mut b = self.clone();
@@ -252,7 +299,7 @@ impl Board {
 
     fn fill_next_cell_with_possible(&self) -> Vec<Board> {
         let mut ret: Vec<Board> = vec![];
-        if self.next_cell_to_fill.is_none(){
+        if self.next_cell_to_fill.is_none() {
             return ret;
         }
 
@@ -260,7 +307,7 @@ impl Board {
         if threatened.is_none() {
             ret.push(self.fill_next_cell_with_amazon());
         }
-        if self.board_size < 12  {
+        if self.board_size < 12 {
             ret.push(self.fill_next_cell_with_tree());
         }
         ret.push(self.fill_next_cell_with_empty());
@@ -284,8 +331,8 @@ impl Board {
                 if self.trees.contains(&c) {
                     char = "T ";
                 }
-                if let Some(next) = self.next_cell_to_fill{
-                    if  next == c {
+                if let Some(next) = self.next_cell_to_fill {
+                    if next == c {
                         char = "x ";
                     }
                 }
@@ -323,7 +370,6 @@ mod test {
         });
     }
 
-
     #[test]
     fn from_lines_threatened() {
         #[cfg_attr(rustfmt, rustfmt::skip)]
@@ -335,7 +381,9 @@ mod test {
         );
         let board = Board::from_lines(lines);
         board.dump_stdout("");
-        assert_true!(board.cell_is_threatened(&(2 as Number, 1 as Number)).is_some());
+        assert_true!(board
+            .cell_is_threatened(&(2 as Number, 1 as Number))
+            .is_some());
     }
 
     #[test]
@@ -349,7 +397,9 @@ mod test {
         );
         let board = Board::from_lines(lines);
         board.dump_stdout("");
-        assert_true!(board.cell_is_threatened(&(2 as Number, 1 as Number)).is_none());
+        assert_true!(board
+            .cell_is_threatened(&(2 as Number, 1 as Number))
+            .is_none());
     }
 
     #[test]
@@ -361,14 +411,22 @@ mod test {
     }
 
     #[test]
+    fn find_board_mutable_test() {
+        match super::find_board_mutable(8, 2) {
+            Some(b) => b.dump_stdout("Encontrado "),
+            None => assert_true!(false),
+        }
+    }
+
+
+    #[test]
     fn find_board_minimize_trees_test() {
         let boards = super::find_board_minimize_trees(8);
         boards.unwrap().dump_stdout("");
     }
 
-
     #[test]
-    fn check_jaime(){
+    fn check_jaime() {
         #[cfg_attr(rustfmt, rustfmt::skip)]
             let lines = vec!(
             ". A T . A . . .",
@@ -381,13 +439,12 @@ mod test {
             ". . . . . A . .",
         );
         let b = Board::from_lines(lines);
-        match b.find_threat(){
+        match b.find_threat() {
             Some(c) => {
                 println!("Amenazada:{:?}", c);
                 assert!(false);
             }
             _ => (),
         }
-
     }
 }
